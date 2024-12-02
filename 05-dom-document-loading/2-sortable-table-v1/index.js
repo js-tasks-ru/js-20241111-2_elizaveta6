@@ -30,13 +30,13 @@ export default class SortableTable {
   getHeaderTemplate() {
     return this.headerConfig
       .map(({ id, title, sortable }) => `
-        <div class="sortable-table__cell" data-id="${id}" data-sortable="${sortable}" ${sortable ? 'data-order="asc"' : ''}>
+        <div class="sortable-table__cell" data-id="${id}" data-sortable="${sortable}" ${sortable ? '' : ''}>
           <span>${title}</span>
           ${sortable ? `<span class="sortable-table__sort-arrow"><span class="sort-arrow"></span></span>` : ''}
         </div>
       `)
       .join('');
-  }
+  }  
 
   getBodyTemplate(data) {
     return data
@@ -56,22 +56,31 @@ export default class SortableTable {
 
   sort(field, order = 'asc') {
     const column = this.headerConfig.find(item => item.id === field);
-
+  
     if (!column || !column.sortable) return;
-
+  
     const direction = order === 'asc' ? 1 : -1;
     const { sortType } = column;
-
+  
     const compareFunction = {
       string: (a, b) => a.localeCompare(b, ['ru', 'en'], { caseFirst: 'upper' }),
       number: (a, b) => a - b,
       date: (a, b) => new Date(a) - new Date(b),
     };
-
+  
     this.data.sort((a, b) => direction * compareFunction[sortType](a[field], b[field]));
-
+  
+    this.subElements.header.querySelectorAll('.sortable-table__cell[data-id]').forEach(headerCell => {
+      headerCell.removeAttribute('data-order');
+    });
+  
+    const currentColumn = this.subElements.header.querySelector(`.sortable-table__cell[data-id="${field}"]`);
+    if (currentColumn) {
+      currentColumn.setAttribute('data-order', order);
+    }
+  
     this.updateBody();
-  }
+  }  
 
   updateBody() {
     this.subElements.body.innerHTML = this.getBodyTemplate(this.data);
